@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Maze Monkey Game</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #000;
+  }
+  canvas {
+    display: block;
+    margin: 0 auto;
+    background-color: #000;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Maze setup ---
+const maze = [
+  "11111111111111111111",
+  "10000000000000000001",
+  "10111101111101111101",
+  "10100001000001000001",
+  "10101111011111011101",
+  "10001000010000010001",
+  "11111111111111111111",
+];
+const ROWS = maze.length;
+const COLS = maze[0].length;
+
+// Compute dynamic tile size
+const TILE_SIZE = Math.min(canvas.width / COLS, canvas.height / ROWS);
+
+// --- Player setup ---
+let playerCol = 1;
+let playerRow = 1;
+const PLAYER_COLOR = 'green';
+
+// --- Goal setup ---
+const goalCol = 18;
+const goalRow = 5;
+
+// --- Monkey setup ---
+const MONKEY_SIZE = TILE_SIZE * 2;
+let monkeyX = 0;
+let monkeyY = 0;
+let monkeyVisible = false;
+let monkeyClicks = 0;
+let gameState = "MAZE"; // MAZE, CLICK_MONKEY, CAPTURE_MONKEY
+const MONKEY_MOVE_INTERVAL = 2000;
+let monkeyTimer = 0;
+
+// --- Selection rectangle ---
+let selecting = false;
+let selStartX = 0, selStartY = 0, selEndX = 0, selEndY = 0;
+
+// --- Keyboard ---
+const keys = {};
+document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+// --- Mouse ---
+canvas.addEventListener('mousedown', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+
+  if (gameState === "CLICK_MONKEY" && monkeyVisible) {
+    if (x >= monkeyX && x <= monkeyX + MONKEY_SIZE &&
+        y >= monkeyY && y <= monkeyY + MONKEY_SIZE) {
+      monkeyClicks++;
+      console.log(`Monkey clicked! (${monkeyClicks}/3)`);
+      if (monkeyClicks >= 3) {
+        console.log("Monkey weakened! Draw rectangle to capture!");
+        gameState = "CAPTURE_MONKEY";
+      }
+    }
+  } else if (gameState === "CAPTURE_MONKEY") {
+    selecting = true;
+    selStartX = selEndX = x;
+    selStartY = selEndY = y;
+  }
+});
+
+canvas.addEventListener('mousemove', (e) => {
+  if (selecting) {
+    const rect = canvas.getBoundingClientRect();
+    selEndX = e.clientX - rect.left;
+    selEndY = e.clientY - rect.top;
+  }
+});
+
+canvas.addEventListener('mouseup', (e) => {
+  if (gameState === "CAPTURE_MONKEY" && selecting) {
+    selecting = false;
+    const rectLeft = Math.min(selStartX, selEndX);
+    const rectRight = Math.max(selStartX, selEndX);
+    const rectTop = Math.min(selStartY, selEndY);
+    const rectBottom = Math.max(selStartY, selEndY);
+
+    if (monkeyX >= rectLeft &&
+        monkeyX + MONKEY_SIZE <= rectRight &&
+        monkeyY >= rectTop &&
+        monkeyY + MONKEY_SIZE <= rectBottom) {
+      console.log("🎉 Monkey captured! You win!");
+      monkeyVisible = false;
+      alert("🎉 You captured the monkey! You win!");
+    } else {
+      console.log("Monkey escaped! Try again.");
+    }
+  }
+});
+
+// --- Helper functions ---
+function canMove(col, row) {
+  if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return false;
+  return maze[row][col] === "0";
+}
+
+function spawnMonkey() {
+  monkeyX = Math.floor(Math.random() * (canvas.width - MONKEY_SIZE));
+  monkeyY = Math.floor(Math.random() * (canvas.height - MONKEY_SIZE));
+  monkeyVisible = true;
+}
+
+// --- Game loop ---
+let lastTime = 0;
+function gameLoop(time) {
+  const dt = time - lastTime;
+  lastTime = time;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (gameState === "MAZE") {
+    // Draw maze walls
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        if (maze[r][c] === "1") {
+          ctx.fillStyle = "gray";
+          ctx.fillRect(c*TILE_SIZE, r*TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+      }
+    }
+
+    // Draw goal
+    ctx.font = `${TILE_SIZE}px serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("🐒", goalCol*TILE_SIZE + TILE_SIZE/2, goalRow*TILE_SIZE + TILE_SIZE/2);
+
+    // Draw player
+    ctx.fillStyle = PLAYER_COLOR;
+    ctx.fillRect(playerCol*TILE_SIZE+TILE_SIZE*0.1, playerRow*TILE_SIZE+TILE_SIZE*0.1,
+                 TILE_SIZE*0.8, TILE_SIZE*0.8);
+
+    // Handle movement (tile by tile)
+    let newCol = playerCol, newRow = playerRow;
+    if (keys["w"]) newRow -= 1;
+    if (keys["s"]) newRow += 1;
+    if (keys["a"]) newCol -= 1;
+    if (keys["d"]) newCol += 1;
+    if (canMove(newCol, newRow)) {
+      playerCol = newCol;
+      playerRow = newRow;
+    }
+
+    // Check reaching goal
+    if (playerCol === goalCol && playerRow === goalRow) {
+      console.log("Reached maze goal! Monkey appears!");
+      gameState = "CLICK_MONKEY";
+      spawnMonkey();
+      monkeyTimer = 0;
+    }
+
+  } else if (gameState === "CLICK_MONKEY" || gameState === "CAPTURE_MONKEY") {
+    // Monkey random movement
+    monkeyTimer += dt;
+    if (monkeyTimer >= MONKEY_MOVE_INTERVAL) {
+      spawnMonkey();
+      monkeyTimer = 0;
+    }
+
+    // Draw monkey
+    if (monkeyVisible) {
+      ctx.font = `${MONKEY_SIZE}px serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("🐒", monkeyX + MONKEY_SIZE/2, monkeyY + MONKEY_SIZE/2);
+    }
+
+    // Draw selection rectangle
+    if (selecting) {
+      ctx.fillStyle = "rgba(0,255,0,0.3)";
+      ctx.fillRect(Math.min(selStartX, selEndX),
+                   Math.min(selStartY, selEndY),
+                   Math.abs(selEndX - selStartX),
+                   Math.abs(selEndY - selStartY));
+      ctx.strokeStyle = "green";
+      ctx.strokeRect(Math.min(selStartX, selEndX),
+                     Math.min(selStartY, selEndY),
+                     Math.abs(selEndX - selStartX),
+                     Math.abs(selEndY - selStartY));
+    }
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+requestAnimationFrame(gameLoop);
+</script>
+</body>
+</html>
+
