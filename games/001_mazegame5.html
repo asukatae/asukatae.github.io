@@ -7,6 +7,7 @@
   <style>
     body {
       margin: 0;
+      padding: 0;
       overflow: hidden;
       background-color: #000;
       position: relative;
@@ -31,6 +32,7 @@
       border: none;
       border-radius: 5px;
       cursor: pointer;
+      z-index: 10;
     }
   </style>
 </head>
@@ -90,7 +92,7 @@
 
   /* ================= INPUT ================= */
   document.addEventListener("keydown", e => {
-    if (gameState !== "MAZE") return;
+    if (gameState !== "MAZE") return; // Prevent controls when not in maze state
 
     let newCol = playerCol;
     let newRow = playerRow;
@@ -242,7 +244,7 @@
         monkeyClicks = 0;
         spawnMonkey();
         monkeyTimer = 0;
-        phoneMessageSound.play(); // Play phone message sound when game state changes
+        phoneMessageSound.play(); // Play the phone message sound
       }
     }
 
@@ -278,7 +280,7 @@
       if (gameState === "CLICK_MONKEY") {
         ctx.fillText("☎️ Hit the monkey three times!", canvas.width / 2, canvas.height - 20);
       } else if (gameState === "CAPTURE_MONKEY") {
-        ctx.fillText("☎️ Use the net to capture the monkey!", canvas.width / 2, canvas.height - 20);
+        ctx.fillText("📶 Use the net to capture the monkey!", canvas.width / 2, canvas.height - 20);
       }
     }
 
@@ -290,7 +292,7 @@
 
       ctx.font = "28px sans-serif";
       ctx.fillText("You Win!", canvas.width / 2, canvas.height / 2 + 120);
-      
+
       // Optionally restart game after a delay
       setTimeout(() => {
         resetGame();
@@ -298,10 +300,10 @@
     }
   }
 
-  // Event listener for the start button
+  // Start the game loop only after clicking the start button
+  // Add event listener for Start Button
   const startButton = document.getElementById("startButton");
   startButton.addEventListener("click", startGame);
-
 </script>
 
 </body>
