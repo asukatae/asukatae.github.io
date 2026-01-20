@@ -19,7 +19,7 @@
     #playAgainButton {
       display: none;
       position: absolute;
-      top: 85%; /* Adjust the position to be below the canvas */
+      top: 40%;
       left: 50%;
       transform: translateX(-50%);
       font-size: 20px;
@@ -82,9 +82,9 @@
   let selStartX = 0, selStartY = 0, selEndX = 0, selEndY = 0;
 
   /* ================= SOUND EFFECTS ================= */
-  const phoneMessageSound = new Audio('https://asukatae.github.io/games/phone-message.mp3'); // Path to phone message sound
-  const boinkSound = new Audio('https://asukatae.github.io/games/boink.mp3'); // Path to boink sound
-  const tadaSound = new Audio('https://asukatae.github.io/games/tada.mp3'); // Path to tada sound
+  const phoneMessageSound = new Audio('http://asukatae.github.io/games/phonering.mp3'); // Path to phone message sound
+  const boinkSound = new Audio('http://asukatae.github.io/games/boink.mp3'); // Path to boink sound
+  const tadaSound = new Audio('http://asukatae.github.io/games/tada.mp3'); // Path to tada sound
 
   /* ================= INPUT ================= */
   document.addEventListener("keydown", e => {
@@ -270,6 +270,9 @@
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText("🙈", canvas.width / 2, canvas.height / 2);
+
+      ctx.font = "28px sans-serif";
+      ctx.fillText("You Win!", canvas.width / 2, canvas.height / 2 + 80);
 
       // Show the Play Again button
       playAgainButton.style.display = "block";
